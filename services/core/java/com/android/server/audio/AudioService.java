@@ -587,6 +587,8 @@ public class AudioService extends IAudioService.Stub
     // If absolute volume is supported in AVRCP device
     private boolean mAvrcpAbsVolSupported = false;
 
+    private boolean mLinkNotificationWithVolume;
+    private final boolean mVoiceCapable;
     private static Long mLastDeviceConnectMsgTime = new Long(0);
 
     private NotificationManager mNm;
@@ -730,6 +732,9 @@ public class AudioService extends IAudioService.Stub
 
         mForcedUseForComm = AudioSystem.FORCE_NONE;
 
+        mVoiceCapable = context.getResources().getBoolean(
+                com.android.internal.R.bool.config_voice_capable);
+
         createAudioSystemThread();
 
         AudioSystem.setErrorCallback(mAudioSystemCallback);
@@ -755,6 +760,10 @@ public class AudioService extends IAudioService.Stub
 
         mUseFixedVolume = mContext.getResources().getBoolean(
                 com.android.internal.R.bool.config_useFixedVolume);
+
+        // read this in before readPersistedSettings() because updateStreamVolumeAlias needs it
+        mLinkNotificationWithVolume = Settings.Secure.getInt(mContext.getContentResolver(),
+                Settings.Secure.VOLUME_LINK_NOTIFICATION, 1) == 1;
 
         // must be called before readPersistedSettings() which needs a valid mStreamVolumeAlias[]
         // array initialized by updateStreamVolumeAlias()
@@ -1140,6 +1149,15 @@ public class AudioService extends IAudioService.Stub
         mStreamVolumeAlias[AudioSystem.STREAM_DTMF] = dtmfStreamAlias;
         mStreamVolumeAlias[AudioSystem.STREAM_ACCESSIBILITY] = a11yStreamAlias;
 
+        if (mVoiceCapable) {
+            if (mLinkNotificationWithVolume) {
+                mStreamVolumeAlias[AudioSystem.STREAM_NOTIFICATION] = AudioSystem.STREAM_RING;
+            } else {
+                mStreamVolumeAlias[AudioSystem.STREAM_NOTIFICATION] =
+                        AudioSystem.STREAM_NOTIFICATION;
+            }
+        }
+
         if (updateVolumes && mStreamStates != null) {
             updateDefaultVolumes();
 
@@ -1281,6 +1299,9 @@ public class AudioService extends IAudioService.Stub
 
             setVolumeKeysControlMediaStream();
         }
+
+        mLinkNotificationWithVolume = Settings.Secure.getInt(cr,
+                Settings.Secure.VOLUME_LINK_NOTIFICATION, 1) == 1;
 
         mMuteAffectedStreams = System.getIntForUser(cr,
                 System.MUTE_STREAMS_AFFECTED, AudioSystem.DEFAULT_MUTE_STREAMS_AFFECTED,
@@ -5191,6 +5212,8 @@ public class AudioService extends IAudioService.Stub
                     Settings.System.VOLUME_KEYS_CONTROL_MEDIA_STREAM), false, this);
             mContentResolver.registerContentObserver(Settings.System.getUriFor(
                     Settings.System.HEADSET_CONNECT_PLAYER), false, this);
+            mContentResolver.registerContentObserver(Settings.Secure.getUriFor(
+                    Settings.Secure.VOLUME_LINK_NOTIFICATION), false, this);
         }
 
         @Override
@@ -5213,6 +5236,14 @@ public class AudioService extends IAudioService.Stub
                 updateEncodedSurroundOutput();
 
                 setVolumeKeysControlMediaStream();
+
+                boolean linkNotificationWithVolume = Settings.Secure.getInt(mContentResolver,
+                        Settings.Secure.VOLUME_LINK_NOTIFICATION, 1) == 1;
+                if (linkNotificationWithVolume != mLinkNotificationWithVolume) {
+                    mLinkNotificationWithVolume = linkNotificationWithVolume;
+                    createStreamStates();
+                    updateStreamVolumeAlias(true, TAG);
+                }
             }
             mLaunchPlayer = Settings.System.getIntForUser(mContext.getContentResolver(),
                     Settings.System.HEADSET_CONNECT_PLAYER, 0, UserHandle.USER_CURRENT);
