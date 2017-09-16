@@ -101,4 +101,8 @@
 
     </PreferenceCategory>
 
+    <com.android.systemui.tuner.StatusBarSwitch
+        android:key="volte"
+        android:title="@string/status_bar_volte" />
+
 </PreferenceScreen>
