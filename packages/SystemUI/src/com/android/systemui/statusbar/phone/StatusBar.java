@@ -3176,6 +3176,17 @@ public class StatusBar extends SystemUI implements DemoMode,
         ThemeAccentUtils.unfuckBlackWhiteAccent(mOverlayManager, mCurrentUserId);
     }
 
+    public boolean isUsingBlackTheme() {
+        OverlayInfo themeInfo = null;
+        try {
+            themeInfo = mOverlayManager.getOverlayInfo("com.android.system.theme.black",
+                    mCurrentUserId);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
+        return themeInfo != null && themeInfo.isEnabled();
+    }
+
     @Nullable
     public View getAmbientIndicationContainer() {
         return mAmbientIndicationContainer;
@@ -5219,6 +5230,7 @@ public class StatusBar extends SystemUI implements DemoMode,
 
         haltTicker();
 
+        boolean useBlackTheme = false;
         boolean useDarkTheme = false;
         if (mCurrentTheme == 0) {
             // The system wallpaper defines if QS should be light or dark.
@@ -5228,12 +5240,23 @@ public class StatusBar extends SystemUI implements DemoMode,
                     && (systemColors.getColorHints() & WallpaperColors.HINT_SUPPORTS_DARK_THEME) != 0;
         } else {
             useDarkTheme = mCurrentTheme == 2;
+            useBlackTheme = mCurrentTheme == 3;
         }
         if (isUsingDarkTheme() != useDarkTheme) {
             // Check for black and white accent so we don't end up
             // with white on white or black on black
             unfuckBlackWhiteAccent();
             ThemeAccentUtils.setLightDarkTheme(mOverlayManager, mCurrentUserId, useDarkTheme);
+        }
+        if (isUsingBlackTheme() != useBlackTheme) {
+            try {
+                mOverlayManager.setEnabled("com.android.system.theme.black",
+                        useBlackTheme, mCurrentUserId);
+                mOverlayManager.setEnabled("com.android.settings.theme.black",
+                        useBlackTheme, mCurrentUserId);
+            } catch (RemoteException e) {
+                Log.w(TAG, "Can't change theme", e);
+            }
         }
 
         // Lock wallpaper defines the color of the majority of the views, hence we'll use it

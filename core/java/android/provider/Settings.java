@@ -4444,6 +4444,7 @@ public final class Settings {
          * 0 - wallpaper based
          * 1 - force light
          * 2 - force dark
+         * 3 - force black
          * @hide
          */
         public static final String SYSTEM_UI_THEME = "system_ui_theme";
@@ -4739,6 +4740,9 @@ public final class Settings {
 
         /**
          * Apps to hide in the ChooserActivity
+         * 0 - wallpaper based
+         * 1 - force light
+         * 2 - force dark
          * @hide
          */
         public static final String CHOOSER_ACTIVITY_BLACKLIST = "chooser_activity_blacklist";
