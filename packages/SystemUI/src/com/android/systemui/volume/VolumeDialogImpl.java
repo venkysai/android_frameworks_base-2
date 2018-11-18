@@ -293,8 +293,8 @@ public class VolumeDialogImpl implements VolumeDialog, TunerService.Tunable {
     }
 
     private float setVolumeDialogDim() {
-        int mVolumeDialogDim = Settings.System.getInt(mContext.getContentResolver(),
-                Settings.System.TRANSPARENT_VOLUME_DIALOG_DIM, 50);
+        int mVolumeDialogDim = System.getInt(mContext.getContentResolver(),
+                System.TRANSPARENT_VOLUME_DIALOG_DIM, 50);
         double dDim = mVolumeDialogDim / 100.0;
         float dim = (float) dDim;
         return dim;
